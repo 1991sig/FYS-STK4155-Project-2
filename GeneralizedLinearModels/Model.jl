@@ -15,5 +15,14 @@ function GLModel(X::Matrix{T},
                  l::Link,
                  c::Vector{Symbol}) where {T<:Real}
     lp = LinearPredictor(X)
-    GLModel(d, lp, x, c)
+    GLModel(d, lp, l, c)
+end
+
+function GLModel(X::Matrix{T},
+                 d::ExponentialFamily,
+                 l::Link) where {T<:Real}
+    lp = LinearPredictor(X)
+    c = p > 1 ? vcat(Symbol("Intercept"),
+                     [Symbol("X", i) for i in 2:p]) : [Symbol("Intercept")]
+    GLModel(d, lp, l, c)
 end

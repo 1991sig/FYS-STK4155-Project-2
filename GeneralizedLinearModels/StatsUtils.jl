@@ -33,4 +33,13 @@ function summary(M::GLMFit)
         @printf "%s % .5e % .5e % .5e   % .5f " v1 v2 v3 v4 v5
         @printf("\n")
     end
+
+    @printf("\n")
+    @printf("\n")
+    @printf "AIC: %d" M.Fit.AIC
+    @printf("\n")
+    @printf "DoF: %d" M.Fit.DoF
+    @printf("\n")
+    @printf "Residual Deviance: %d" sum(M.Fit.𝐃)
+
 end

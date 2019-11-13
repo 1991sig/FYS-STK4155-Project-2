@@ -38,3 +38,23 @@ function glm(X::Matrix{T},
     glmfit = GLMFit(glm, fit, false)
     return glmfit
 end
+
+function glm(X::Matrix{T},
+             y::Vector{T},
+             d::ExponentialFamily,
+             l::Link) where {T<:Real}
+    p = size(X)[2]
+    c = p > 1 ? vcat(Symbol("Intercept"), 
+                     [Symbol("X", i) for i in 2:p]) : [Symbol("Intercept")]
+    lp  = LinearPredictor(X)
+    glm = GLModel(d, lp, l, c)
+    fit = Fit(y, lp.β)
+    glmfit = GLMFit(glm, fit, false)
+    return glmfit
+end
+
+function Predict(M::GLMFit, X)
+    η = X * M.Fit.β
+    μ = InverseLinkFunction(M.Model.g, η)
+    return μ
+end

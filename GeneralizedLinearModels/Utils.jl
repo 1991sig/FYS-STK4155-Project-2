@@ -10,3 +10,5 @@ end
 function logit(θ::Vector{T}) where {T<:Real}
     return log.(θ ./ (1 .- θ))
 end
+
+Score(y, y_hat) = sum(y .== y_hat)/size(y)[1]

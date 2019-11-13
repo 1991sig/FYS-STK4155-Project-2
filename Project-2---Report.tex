@@ -1,0 +1,382 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Project 2 - FYS-STK4155},
+            pdfauthor={Sigurd Hylin},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Project 2 - FYS-STK4155}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Sigurd Hylin}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{}
+    \predate{}\postdate{}
+  
+\usepackage{amsmath}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+In this project we use logistic regression and an artificial neural
+network to perform classification on credit card debt default data. In
+the logistic regression setting, I explore forward selection and
+backward elimination using AIC as selection criterion, for model
+selection. For the neural network I use grid search to identify the
+optimal hyperparameter values. To evaluate and compare the model
+performances, the data is split into training and test sets. The
+logistic regression and neural network models have been implemented in
+two Julia modules. The code for these modules and the Jupyterlab
+notebooks I use to run the models can be found at
+\url{https://github.com/1991sig/Project-2}
+\end{abstract}
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\section{Introduction}\label{introduction}
+
+The credit card default data set,
+\url{https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients},
+contains 30 000 observations of several dependent variables, and has a
+binary dependent variable where 1 indicates that the person defaulted on
+his/hers credit card debt in the following month. Some variables are
+continuous, like the debt limit and the payment and billing history,
+others are categorical. The data stems from 2005 and tracks individuals'
+payment and billing history for 6 months from April 2005 to September
+2005, and the interest is in using these data including the individuals'
+debt limits, marital status, gender, education, and payment delay
+history over the same 6 month period to determine whether or not the
+person will default in the next month (October 2005).
+
+\section{Code}\label{code}
+
+All code as well as notebooks to run the models can be found at
+\url{https://github.com/1991sig/Project-2}.
+
+Having launched in 2012, Julia is a relatively new programming language,
+and was created with an aim to combine the best of other programming
+languages, like the speed of C, the usability of Python, and the
+powerful linear algebra capabilities of MatLab, among others \footnote{Gina
+  Helfrich Ph.D, ``Announcing Julia 1.0'',
+  \url{https://numfocus.org/blog/announcing-julia-1-0}}. I decided to
+use Julia in this project, since it has a lot of interesting features
+which I wanted to learn more about, and since it is easy to write
+modular code which can easily be extended later on. In addition, it is
+very geared towards linear algebra, which is definitely useful.
+
+Before this project, I had already started developing a module for
+Generalized Linear Models, which I have therefore continued to develop
+for this project. Currently, I have only finished implementing the
+functionality to perfom logistic regression.
+
+The other module I have implemented is a simple neural network module,
+which currently only has the ability to use a feed forward architecture.
+
+\subsection{GLM Module}\label{glm-module}
+
+To develop this module, I have drawn inspiration from the ``official''
+GLM.jl from the StatsKit package in the way that I have organized
+things. Therefore, some of the structure and naming of the code may
+share some similarities. In terms of the functionality I wanted to
+incorporate, I aimed to have at least some of the capabilities that R
+offers.
+
+\subsubsection{Theory}\label{theory}
+
+GLM's consist of a random component, a linear predictor, and a link
+function to allow modeling dependencies where the random component is
+not necessarily from the normal distribution.
+
+The random components, \(\mu_i = E(Y_i|X_i)\), in a GLM model must stem
+from the exponential family of distributions, and is the conditional
+mean of the dependent variable given the observation of the independent
+variable(s).
+
+The linear predictor is \(\eta\) such that \(\eta = X\beta\), where
+\(X\) is the matrix containing the observations of the independent
+variable(s).
+
+The link function in a GLM bears it's name due to the fact that it
+connects/links the conditional mean and the linear predictor \(\eta\)
+together trough a function. I.e. \(\eta_i = g(\mu_i)\) and
+\(\mu_i = g^{-1}(\eta_i)\) for a specific function \(g\), which is then
+the link function.
+
+The exponential family of distributions has the neat property that the
+distributions which are a part of it can all be formulated in a general
+way.
+
+\footnote{P. McCullagh \& J.A. Nelder, ``Generalized Linear Models, 2nd
+  edition'', 27-28}
+
+\subsubsection{Code}\label{code-1}
+
+One of the distributions in the exponential family of distributions is
+the Binomial distribution. \texttt{Binomial.jl} contains the general
+abstract definition of a binomial random component/distribution and
+functions for calculating variance, likelihood, loglikelihood, and
+deviance.
+
+\texttt{Links.jl} contains the abstract definitions of link functions
+for the binomial distribution, and specifies the inverse link functions
+also.
+
+\texttt{LinearPredictor.jl} specifies the data matrix, and generates the
+starting values of \(\beta\) before the model is fitted.
+
+\texttt{Model.jl} contains the struct for a GLM model, i.e.~where one
+ties together the random component, the linear predictor, and the link
+function.
+
+A full GLM model struct contains the model, the ``fit'' and a flag
+indicating whether the model has been fitted or not. The fit struct is
+implemented in \texttt{Fit.jl}, and contains - y, the response vector -
+\(\beta\), \(\hat{\beta}\) the estimated coefficients vector -
+\(\mathbf{D}\), the residual deviance vector - SE, the standard errors
+of \(\beta\)-hats - \(\eta\), vector with \(\hat{\eta}= X\hat{\beta}\) -
+\(\mu\), \(\mu\)-hat vector - DoF, the Degrees of Freedom - AIC, the
+Akaike Information Criterion value for the fitted model
+
+\paragraph{Fisher's Scoring Algorithm}\label{fishers-scoring-algorithm}
+
+From introductional statistics, we are familiar with the principles of
+maximum likelihood estimation, and how maximizing the log-likelihood is
+equivalent to maximizing the likelihood itself.
+
+Let the log-likelihood be \(l(\beta; y) = \sum log \mathcal{P}(y_i)\)
+
+Taking the derivative, we obtain the Score Equations:
+\(U(\beta) = \nabla l(\beta; y) = ( \dfrac{dl(\beta; y)}{d\beta_1}, \cdots, \dfrac{dl(\beta; y)}{d\beta_p})\)
+
+The Hessian of the log-likelihood, \(\nabla^2 l(\beta; y)\), is a matrix
+and the Fisher Expected Information matrix, is equal to the expectation
+of this negated Hessian matrix: \(I(\beta) = E[- \nabla^2 l(\beta; y)]\)
+
+Fisher's Scoring Algorithm is defined as:
+\(\hat{\beta}\ ^{(\ t + 1)} = \hat{\beta}\ ^{(\ t)} +I(\hat{\beta}\ ^{(\ t)})^{-1}U(\hat{\beta}\ ^{(\ t)})\)
+
+I will not derive the whole expression here, but when we use a canonical
+link function, such as the logit in the case of a binomial random
+component, Fisher's Scoring Algorithm and Newton's Method are
+equivalent.
+
+I have implemented this fitting algorithm in the file
+\texttt{FisherScoring.jl}.
+
+\subsection{NeuralNetworks Module}\label{neuralnetworks-module}
+
+Most of this code is based on the code from the lectures.
+
+\texttt{ActivationFunctions.jl} currently only contains the
+sigmoid/logistic function, but I have more planned for the future.
+
+\texttt{Common.jl} contains the structure for a neural network model,
+which in my implementation consists of an ``architecture''
+(e.g.~feedforward with 1 layer), the parameters of the model, and a flag
+indicating whether or not the model has been fitted yet.
+
+\texttt{NeuralNet.jl} currently only contains the setup for a one-layer
+feedforward model.
+
+\texttt{Parameters.jl} contains the parameters struct with constructors.
+The parameters I keep in this struct are: - \(W^H\),the hidden layer
+weights - \(b^H\), the hidden layer bias term - \(W^O\),the output layer
+weights - \(b^O\), the output layer bias term - \(z^H\),the hidden layer
+calculated values, i.e. \(z^H = XW^H + b^H\) - \(a^H\), the hidden layer
+output values after activation function is applied to z\^{}H, i.e.
+\(a^H = g(z^H)\) - \(z^O\) the output layer calculated values, i.e.
+\(z^O = a^HW^O + b^O\) - \(P\), the probabilities after applying the
+logistic function/multinomial function depending on number of categories
+in the response.
+
+\texttt{Train.jl} contains the code to train the neural network.
+FeedForward! is a mutating function that performs a forward pass and
+applies the results to the parameters it takes directly.
+BackPropagation! performs the backpropagation algorithm by first
+calculating the loss of the hidden layer and the output layer. The cost
+function used is the square loss:
+\(C(\theta) = \frac{1}{2}\sum (p_i - y_i)^2\).
+
+\section{Methods \& Implementations}\label{methods-implementations}
+
+\subsection{Implementations}\label{implementations}
+
+In \texttt{Credit\ Card\ Data.ipynb} all the cleaning and processing of
+the data is performed.
+
+In \texttt{Logistic\ Regression\ -\ Credit\ Card\ Data.ipynb}, I fit the
+logistic regression model to the data and evaluate the results.
+
+In \texttt{Neural\ Network\ -\ Credit\ Card\ Data.ipynb}, I use a neural
+network to predict on the data.
+
+\subsubsection{Comparisons}\label{comparisons}
+
+I have tested my implementations against R's glm methods, and these
+perform more or less the same.
+
+I have not tested my implementations of the neural network using
+TensorFlow.jl yet.
+
+\section{Results}\label{results}
+
+\begin{longtable}[]{@{}lll@{}}
+\caption{Part 1}\tabularnewline
+\toprule
+\begin{minipage}[b]{0.42\columnwidth}\raggedright\strut
+Model\strut
+\end{minipage} & \begin{minipage}[b]{0.24\columnwidth}\raggedright\strut
+Accuracy Train\strut
+\end{minipage} & \begin{minipage}[b]{0.25\columnwidth}\raggedright\strut
+Accuracy Test\strut
+\end{minipage}\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+\begin{minipage}[b]{0.42\columnwidth}\raggedright\strut
+Model\strut
+\end{minipage} & \begin{minipage}[b]{0.24\columnwidth}\raggedright\strut
+Accuracy Train\strut
+\end{minipage} & \begin{minipage}[b]{0.25\columnwidth}\raggedright\strut
+Accuracy Test\strut
+\end{minipage}\tabularnewline
+\midrule
+\endhead
+\begin{minipage}[t]{0.42\columnwidth}\raggedright\strut
+Logistic Regression full model\strut
+\end{minipage} & \begin{minipage}[t]{0.24\columnwidth}\raggedright\strut
+0.81695\strut
+\end{minipage} & \begin{minipage}[t]{0.25\columnwidth}\raggedright\strut
+0.81767\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.42\columnwidth}\raggedright\strut
+Logistic Regression model 2\strut
+\end{minipage} & \begin{minipage}[t]{0.24\columnwidth}\raggedright\strut
+0.81723\strut
+\end{minipage} & \begin{minipage}[t]{0.25\columnwidth}\raggedright\strut
+0.81844\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.42\columnwidth}\raggedright\strut
+Neural Network - pre grid search\strut
+\end{minipage} & \begin{minipage}[t]{0.24\columnwidth}\raggedright\strut
+0.23486\strut
+\end{minipage} & \begin{minipage}[t]{0.25\columnwidth}\raggedright\strut
+N/A\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.42\columnwidth}\raggedright\strut
+Neural Network - grid search\strut
+\end{minipage} & \begin{minipage}[t]{0.24\columnwidth}\raggedright\strut
+0.69943\strut
+\end{minipage} & \begin{minipage}[t]{0.25\columnwidth}\raggedright\strut
+0.70433\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+The logistic regression model performed better in this case. However, I
+have not had the time to build the same familiarity with neural networks
+as I have with GLM's, so therefore I haven't been sure how this model
+could have been optimized to perform better. As is often the case, a
+more complex solution to a problem does not necessarily yield better
+results.
+
+In this case, where we study credit card data obtained from a bank, it
+is not likely that a solution based on neural networks would be the
+optimal choice even if it had performed better, since we lose the
+inferential apparatus which is readily available with other methods. For
+a model to provide actionable insight to a bank, it would likely have to
+offer a certain level of interpretability. Logistic regression is often
+preferred in settings such as these, since one can easily interpret how
+the values of the input variables have an effect on the predicted
+probabilities, and we also have the ability to identify
+coefficients/variables which have no statistically significant relation
+to the outcome variable.
+
+Interestingly, for both of the models, the performance is every so
+slightly better on the test set compared to the training set. This could
+indicate that there may be one or more outliers in the training set,
+which the fitted models are not able to correctly label. For the
+logistic regression model, R has some functionality to identify this
+type of stuff, but I have not had the time to develop the same
+functionality in my package.
+
+I have not managed to complete my code for part 2 in time, so I do not
+have anything that I want to show for the second part of the assignment.
+
+
+\end{document}

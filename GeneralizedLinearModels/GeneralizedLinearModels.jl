@@ -28,6 +28,7 @@ module GeneralizedLinearModels
         Likelihood,
         Deviance,
         glm,
+        Predict,
 
         # Utils
         logistic,
